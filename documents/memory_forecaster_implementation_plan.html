@@ -1,0 +1,207 @@
+
+<style>
+  .plan-wrap { font-size:14px; color:var(--color-text-primary); padding:0.5rem 0 1rem; }
+  .phase-card { background:var(--color-background-primary); border:0.5px solid var(--color-border-tertiary); border-radius:var(--border-radius-lg); margin-bottom:12px; overflow:hidden; }
+  .phase-header { display:flex; align-items:center; gap:12px; padding:14px 16px; cursor:pointer; user-select:none; }
+  .phase-header:hover { background:var(--color-background-secondary); }
+  .phase-badge { font-size:11px; font-weight:500; padding:3px 10px; border-radius:20px; white-space:nowrap; }
+  .phase-title { font-weight:500; font-size:14px; flex:1; }
+  .phase-day { font-size:12px; color:var(--color-text-secondary); white-space:nowrap; }
+  .phase-chevron { font-size:12px; color:var(--color-text-tertiary); transition:transform .2s; }
+  .phase-chevron.open { transform:rotate(90deg); }
+  .phase-body { border-top:0.5px solid var(--color-border-tertiary); padding:12px 16px 14px; display:none; }
+  .phase-body.open { display:block; }
+  .task-row { display:flex; align-items:flex-start; gap:10px; padding:7px 0; border-bottom:0.5px solid var(--color-border-tertiary); }
+  .task-row:last-child { border-bottom:none; padding-bottom:0; }
+  .task-check { width:16px; height:16px; flex-shrink:0; margin-top:1px; cursor:pointer; accent-color:var(--color-text-info); }
+  .task-label { flex:1; line-height:1.5; color:var(--color-text-primary); }
+  .task-label.done { text-decoration:line-through; color:var(--color-text-tertiary); }
+  .task-tag { font-size:11px; padding:2px 8px; border-radius:20px; white-space:nowrap; flex-shrink:0; margin-top:2px; }
+  .tag-code { background:var(--color-background-info); color:var(--color-text-info); }
+  .tag-ml { background:#EEEDFE; color:#3C3489; }
+  .tag-os { background:#E1F5EE; color:#085041; }
+  .tag-eval { background:#FAEEDA; color:#633806; }
+  .progress-bar-wrap { background:var(--color-background-secondary); border-radius:20px; height:6px; margin:12px 0 4px; overflow:hidden; }
+  .progress-bar-fill { height:100%; border-radius:20px; background:var(--color-text-info); transition:width .4s; }
+  .progress-label { font-size:12px; color:var(--color-text-secondary); margin-bottom:16px; }
+  .stats-row { display:flex; gap:10px; margin-bottom:16px; }
+  .stat-card { flex:1; background:var(--color-background-secondary); border-radius:var(--border-radius-md); padding:10px 12px; }
+  .stat-val { font-size:20px; font-weight:500; }
+  .stat-lab { font-size:11px; color:var(--color-text-secondary); margin-top:2px; }
+</style>
+
+<div class="plan-wrap">
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-val" id="done-count">0</div><div class="stat-lab">tasks done</div></div>
+    <div class="stat-card"><div class="stat-val" id="total-count">0</div><div class="stat-lab">total tasks</div></div>
+    <div class="stat-card"><div class="stat-val" id="pct-done">0%</div><div class="stat-lab">complete</div></div>
+  </div>
+  <div class="progress-bar-wrap"><div class="progress-bar-fill" id="prog-fill" style="width:0%"></div></div>
+  <div class="progress-label" id="prog-label">Tap a phase to expand &amp; check off tasks</div>
+
+  <div id="phases"></div>
+</div>
+
+<script>
+const phases = [
+  {
+    title: "Phase 1 — Environment setup & data collection",
+    day: "Day 1",
+    color: "#E6F1FB", textColor: "#0C447C",
+    tasks: [
+      { text: "Create project folder structure: collector/, features/, model/, decision/, evaluate/, data/, notebooks/", tag: "code" },
+      { text: "Install dependencies: psutil, pandas, numpy, scikit-learn, torch, matplotlib", tag: "code" },
+      { text: "Write collector.py — poll /proc/meminfo + psutil every 2 seconds, append rows to data/memory_log.csv", tag: "code" },
+      { text: "Run collector.py in background for 2–3 hours while doing other things", tag: "os" },
+      { text: "Verify CSV has at least 3000 rows with timestamp, used_mb, available_mb, per-pid columns", tag: "eval" },
+    ]
+  },
+  {
+    title: "Phase 2 — Feature engineering pipeline",
+    day: "Day 2",
+    color: "#EEEDFE", textColor: "#3C3489",
+    tasks: [
+      { text: "Write features.py — load CSV, sort by timestamp, set index", tag: "code" },
+      { text: "Compute lag features: memory_t1, memory_t5, memory_t10 (shift by 1/5/10 rows)", tag: "ml" },
+      { text: "Compute rolling window stats: 30-sample mean, std, min, max", tag: "ml" },
+      { text: "Compute rate of change: delta_mb = used_mb.diff() / time_delta", tag: "ml" },
+      { text: "Encode process context: top-5 PID memory contributors as numeric features", tag: "ml" },
+      { text: "Drop NaN rows (first 30 from rolling window), split into X (features) and y (used_mb at t+10)", tag: "code" },
+      { text: "Export cleaned feature matrix to data/features.csv", tag: "code" },
+    ]
+  },
+  {
+    title: "Phase 3 — Baseline model (Random Forest)",
+    day: "Day 3",
+    color: "#E1F5EE", textColor: "#085041",
+    tasks: [
+      { text: "Write model/rf_model.py — train RandomForestRegressor with n_estimators=100", tag: "ml" },
+      { text: "80/20 train-test split (time-ordered, no shuffle — critical for time-series)", tag: "ml" },
+      { text: "Compute MAE and RMSE on test set, print results", tag: "eval" },
+      { text: "Plot actual vs predicted memory curve in notebooks/analysis.ipynb", tag: "eval" },
+      { text: "Save trained model to model/rf_model.pkl using joblib", tag: "code" },
+    ]
+  },
+  {
+    title: "Phase 4 — LSTM model (main AI component)",
+    day: "Day 4",
+    color: "#FAEEDA", textColor: "#633806",
+    tasks: [
+      { text: "Write model/lstm_model.py — define LSTM with 2 layers, hidden_size=64, dropout=0.2 in PyTorch", tag: "ml" },
+      { text: "Create sliding window dataset: window of 20 timesteps → predict next 1 step", tag: "ml" },
+      { text: "Train for 30 epochs with Adam optimizer, lr=1e-3, batch_size=32", tag: "ml" },
+      { text: "Evaluate on test set — compare LSTM MAE vs RF MAE side by side", tag: "eval" },
+      { text: "Plot training loss curve and prediction comparison", tag: "eval" },
+      { text: "Save model checkpoint to model/lstm_checkpoint.pt", tag: "code" },
+    ]
+  },
+  {
+    title: "Phase 5 — Decision engine (the OS integration)",
+    day: "Day 5",
+    color: "#FAECE7", textColor: "#712B13",
+    tasks: [
+      { text: "Write decision.py — load saved model, accept live memory sample, return forecast", tag: "code" },
+      { text: "Implement threshold logic: if forecast > 85% RAM → trigger swap early", tag: "os" },
+      { text: "Implement pre-allocation hint: if forecast spike > 200MB → log pre-alloc recommendation", tag: "os" },
+      { text: "Implement OOM prevention: if forecast > 95% RAM → log kill/throttle candidate PIDs", tag: "os" },
+      { text: "Write simulate.py — replay memory_log.csv through decision engine, record all decisions", tag: "code" },
+      { text: "Log decisions to data/decisions.csv with columns: timestamp, forecast, action, reason", tag: "code" },
+    ]
+  },
+  {
+    title: "Phase 6 — Evaluation, plots & report",
+    day: "Day 6",
+    color: "#EAF3DE", textColor: "#27500A",
+    tasks: [
+      { text: "Write evaluate.py — compute MAE, RMSE, MAPE for both RF and LSTM", tag: "eval" },
+      { text: "Plot: actual vs predicted memory (both models on same chart)", tag: "eval" },
+      { text: "Plot: decision log timeline — highlight swap/OOM/pre-alloc events", tag: "eval" },
+      { text: "Plot: feature importance from RF model", tag: "eval" },
+      { text: "Write report sections: introduction, methodology, results, conclusion", tag: "code" },
+      { text: "Include architecture diagram and result plots in report", tag: "eval" },
+    ]
+  },
+  {
+    title: "Phase 7 — Feedback loop & polish (buffer day)",
+    day: "Day 7",
+    color: "#F1EFE8", textColor: "#444441",
+    tasks: [
+      { text: "Implement retrain trigger: if rolling MAE > threshold, re-fit RF on latest data", tag: "ml" },
+      { text: "Add a simple CLI: python main.py --mode live | --mode simulate | --mode evaluate", tag: "code" },
+      { text: "Write README.md with setup instructions, how to run, how to interpret output", tag: "code" },
+      { text: "Final review: check all files run without errors end-to-end", tag: "eval" },
+    ]
+  }
+];
+
+const container = document.getElementById('phases');
+let allCheckboxes = [];
+
+phases.forEach((p, pi) => {
+  const card = document.createElement('div');
+  card.className = 'phase-card';
+
+  const header = document.createElement('div');
+  header.className = 'phase-header';
+  header.innerHTML = `
+    <span class="phase-badge" style="background:${p.color};color:${p.textColor}">${p.day}</span>
+    <span class="phase-title">${p.title}</span>
+    <span class="phase-day" id="phase-prog-${pi}">0/${p.tasks.length}</span>
+    <span class="phase-chevron" id="chev-${pi}">&#9654;</span>
+  `;
+
+  const body = document.createElement('div');
+  body.className = 'phase-body';
+  body.id = `body-${pi}`;
+
+  p.tasks.forEach((t, ti) => {
+    const row = document.createElement('div');
+    row.className = 'task-row';
+    const tagClass = t.tag === 'ml' ? 'tag-ml' : t.tag === 'os' ? 'tag-os' : t.tag === 'eval' ? 'tag-eval' : 'tag-code';
+    row.innerHTML = `
+      <input type="checkbox" class="task-check" id="cb-${pi}-${ti}">
+      <span class="task-label" id="lbl-${pi}-${ti}">${t.text}</span>
+      <span class="task-tag ${tagClass}">${t.tag}</span>
+    `;
+    body.appendChild(row);
+
+    const cb = row.querySelector('input');
+    allCheckboxes.push(cb);
+    cb.addEventListener('change', () => {
+      document.getElementById(`lbl-${pi}-${ti}`).classList.toggle('done', cb.checked);
+      updateProgress();
+    });
+  });
+
+  header.addEventListener('click', () => {
+    const isOpen = body.classList.contains('open');
+    body.classList.toggle('open', !isOpen);
+    document.getElementById(`chev-${pi}`).classList.toggle('open', !isOpen);
+  });
+
+  card.appendChild(header);
+  card.appendChild(body);
+  container.appendChild(card);
+});
+
+function updateProgress() {
+  const total = allCheckboxes.length;
+  const done = allCheckboxes.filter(c => c.checked).length;
+  const pct = total ? Math.round(done / total * 100) : 0;
+  document.getElementById('done-count').textContent = done;
+  document.getElementById('total-count').textContent = total;
+  document.getElementById('pct-done').textContent = pct + '%';
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('prog-label').textContent = done === total
+    ? 'All done — ready to submit!'
+    : `${total - done} tasks remaining`;
+
+  phases.forEach((p, pi) => {
+    const pDone = p.tasks.filter((_, ti) => document.getElementById(`cb-${pi}-${ti}`)?.checked).length;
+    const el = document.getElementById(`phase-prog-${pi}`);
+    if (el) el.textContent = `${pDone}/${p.tasks.length}`;
+  });
+}
+
+updateProgress();
+</script>
