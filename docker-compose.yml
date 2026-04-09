@@ -1,0 +1,10 @@
+services:
+  dashboard:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./memory-forecaster/data:/app/memory-forecaster/data
+      - ./memory-forecaster/model:/app/memory-forecaster/model
+    restart: unless-stopped
+    container_name: memory_forecaster_prod
