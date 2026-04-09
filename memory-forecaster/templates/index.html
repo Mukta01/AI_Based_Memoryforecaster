@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="AI-Based Memory Usage Forecaster — Interactive Dashboard for OS Course Project">
+  <title>AI Memory Forecaster — Dashboard</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div class="app-container">
+
+    <!-- ============ HEADER ============ -->
+    <header class="header">
+      <div class="header-brand">
+        <div class="logo">
+          <img src="/static/logo.png" alt="AI Memory Forecaster Logo">
+        </div>
+        <div>
+          <h1>AI Memory Forecaster</h1>
+          <div class="subtitle">Operating Systems Course — Proactive Memory Management</div>
+        </div>
+      </div>
+      <div class="live-badge">
+        <i data-lucide="activity"></i>
+        <span>RAM</span>
+        <span class="live-value" id="live-mem-pct">--.--%</span>
+      </div>
+    </header>
+
+    <!-- ============ PIPELINE STEPPER ============ -->
+    <div class="pipeline-stepper" id="pipeline-stepper">
+      <div class="pip-step" data-step="collect" id="pip-collect">
+        <span class="step-icon"><i data-lucide="database"></i></span> Collect
+      </div>
+      <span class="pip-arrow">▸</span>
+      <div class="pip-step" data-step="features" id="pip-features">
+        <span class="step-icon"><i data-lucide="binary"></i></span> Features
+      </div>
+      <span class="pip-arrow">▸</span>
+      <div class="pip-step" data-step="train" id="pip-train">
+        <span class="step-icon"><i data-lucide="brain-circuit"></i></span> Train
+      </div>
+      <span class="pip-arrow">▸</span>
+      <div class="pip-step" data-step="simulate" id="pip-simulate">
+        <span class="step-icon"><i data-lucide="play-circle"></i></span> Simulate
+      </div>
+      <span class="pip-arrow">▸</span>
+      <div class="pip-step" data-step="evaluate" id="pip-evaluate">
+        <span class="step-icon"><i data-lucide="bar-chart-3"></i></span> Evaluate
+      </div>
+    </div>
+
+    <!-- ============ TAB NAVIGATION ============ -->
+    <nav class="tab-nav" id="tab-nav">
+      <button class="tab-btn active" data-tab="overview">
+        <i data-lucide="layout-dashboard"></i> Overview
+      </button>
+      <button class="tab-btn" data-tab="collect">
+        <i data-lucide="database"></i> Data Collection
+      </button>
+      <button class="tab-btn" data-tab="features">
+        <i data-lucide="settings-2"></i> Features
+      </button>
+      <button class="tab-btn" data-tab="training">
+        <i data-lucide="bot"></i> Model Training
+      </button>
+      <button class="tab-btn" data-tab="decisions">
+        <i data-lucide="target"></i> Decisions
+      </button>
+      <button class="tab-btn" data-tab="evaluation">
+        <i data-lucide="line-chart"></i> Evaluation
+      </button>
+    </nav>
+
+    <!-- ============================================================
+         TAB 1 — OVERVIEW
+         ============================================================ -->
+    <section class="tab-content active" id="tab-overview">
+      <h2 class="section-title"><i data-lucide="layers"></i> System Architecture</h2>
+      <p class="section-desc">
+        The AI-Based Memory Forecaster collects real-time memory telemetry, engineers
+        time-series features, trains <strong>Random Forest</strong> and <strong>LSTM</strong>
+        models to predict future memory demand, and feeds those forecasts into a proactive
+        decision engine.
+      </p>
+
+      <!-- Architecture Flow -->
+      <div class="card mb-20">
+        <div class="card-header">
+          <span class="card-title"><i data-lucide="refresh-cw"></i> Data Pipeline Flow</span>
+        </div>
+        <div class="arch-flow">
+          <div class="arch-node" style="border-color:var(--cyan);">
+            <i data-lucide="database" style="color:var(--cyan)"></i>
+            Collector<small>psutil · 2s polls</small>
+          </div>
+          <span class="arch-arrow">→</span>
+          <div class="arch-node" style="border-color:var(--violet);">
+            <i data-lucide="settings-2" style="color:var(--violet)"></i>
+            Features<small>lags · rolling · rates</small>
+          </div>
+          <span class="arch-arrow">→</span>
+          <div class="arch-node" style="border-color:var(--emerald);">
+            <i data-lucide="brain-circuit" style="color:var(--emerald)"></i>
+            Models<small>RF · LSTM</small>
+          </div>
+          <span class="arch-arrow">→</span>
+          <div class="arch-node" style="border-color:var(--amber);">
+            <i data-lucide="play-circle" style="color:var(--amber)"></i>
+            Decisions<small>prealloc · swap · OOM</small>
+          </div>
+          <span class="arch-arrow">→</span>
+          <div class="arch-node" style="border-color:var(--rose);">
+            <i data-lucide="line-chart" style="color:var(--rose)"></i>
+            Evaluate<small>MAE · RMSE · MAPE</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Stats -->
+      <div class="grid-4 mb-20" id="overview-stats">
+        <div class="metric-card">
+          <div class="metric-label">Data Samples</div>
+          <div class="metric-value cyan" id="stat-rows">—</div>
+          <div class="metric-sub">rows collected</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Features Engineered</div>
+          <div class="metric-value violet" id="stat-features">—</div>
+          <div class="metric-sub">ML-ready columns</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Models Trained</div>
+          <div class="metric-value emerald" id="stat-models">—</div>
+          <div class="metric-sub">RF + LSTM</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Decisions Logged</div>
+          <div class="metric-value amber" id="stat-decisions">—</div>
+          <div class="metric-sub">proactive actions</div>
+        </div>
+      </div>
+
+      <!-- Reactive vs Proactive -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title"><i data-lucide="zap"></i> Why Proactive Memory Management?</span>
+        </div>
+        <div class="data-table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Approach</th>
+                <th>Reactive (Traditional OS)</th>
+                <th>Proactive (This Project)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Page Faults</td>
+                <td style="color:var(--rose)">Wait for fault → allocate</td>
+                <td style="color:var(--emerald)">Predict demand → pre-allocate</td>
+              </tr>
+              <tr>
+                <td>Swap</td>
+                <td style="color:var(--rose)">Swap only when RAM full</td>
+                <td style="color:var(--emerald)">Forecast spike → swap early</td>
+              </tr>
+              <tr>
+                <td>OOM</td>
+                <td style="color:var(--rose)">OOM-kill after exhaustion</td>
+                <td style="color:var(--emerald)">Forecast exhaustion → throttle</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         TAB 2 — DATA COLLECTION
+         ============================================================ -->
+    <section class="tab-content" id="tab-collect">
+      <div class="flex justify-between items-center mb-20">
+        <div>
+          <h2 class="section-title"><i data-lucide="database"></i> Data Collection</h2>
+          <p class="section-desc">
+            <code>collector.py</code> polls system memory via <strong>psutil</strong> every
+            2 seconds, capturing system-wide metrics and the top-5 processes by RSS.
+          </p>
+        </div>
+        <button class="btn btn-primary" id="btn-collect" onclick="runPipeline('collect')">
+          <i data-lucide="circle-play"></i> Generate Data
+        </button>
+      </div>
+
+      <!-- Live Memory Gauge -->
+      <div class="grid-3 mb-20">
+        <div class="card text-center">
+          <div class="card-header"><span class="card-title"><i data-lucide="line-chart"></i> Current RAM</span></div>
+          <div class="gauge-wrap">
+            <svg class="gauge-svg" width="150" height="150" viewBox="0 0 150 150">
+              <circle class="gauge-bg" cx="75" cy="75" r="60"></circle>
+              <circle class="gauge-fill" id="gauge-circle" cx="75" cy="75" r="60"
+                      stroke="var(--cyan)"
+                      stroke-dasharray="377"
+                      stroke-dashoffset="377"></circle>
+            </svg>
+            <div class="gauge-content">
+              <span class="metric-value cyan" id="gauge-pct">--</span>
+              <span class="metric-unit">%</span>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title"><i data-lucide="hard-drive"></i> Memory Stats</span></div>
+          <div class="flex flex-col gap-20" style="gap:14px;">
+            <div>
+              <div class="metric-label">Used</div>
+              <div class="metric-value cyan" id="live-used" style="font-size:1.3rem">— MB</div>
+            </div>
+            <div>
+              <div class="metric-label">Available</div>
+              <div class="metric-value emerald" id="live-avail" style="font-size:1.3rem">— MB</div>
+            </div>
+            <div>
+              <div class="metric-label">Total</div>
+              <div class="metric-value violet" id="live-total" style="font-size:1.3rem">— MB</div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title"><i data-lucide="package"></i> Collection Info</span></div>
+          <div class="flex flex-col gap-20" style="gap:14px;">
+            <div>
+              <div class="metric-label">Rows Collected</div>
+              <div class="metric-value amber" id="collect-rows" style="font-size:1.3rem">—</div>
+            </div>
+            <div>
+              <div class="metric-label">Columns</div>
+              <div class="metric-value" style="font-size:1.3rem;color:var(--text-secondary)">26</div>
+            </div>
+            <div>
+              <div class="metric-label">Interval</div>
+              <div class="metric-value" style="font-size:1.3rem;color:var(--text-secondary)">2 sec</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Raw Data Preview -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title"><i data-lucide="file-text"></i> Raw Data Preview</span>
+          <span class="badge badge-cyan" id="collect-badge">memory_log.csv</span>
+        </div>
+        <div class="data-table-wrap" id="raw-data-table">
+          <div class="empty-state">
+            <div class="empty-icon"><i data-lucide="file-text" style="width:48px;height:48px;"></i></div>
+            <p>No data yet. Click <strong>Generate Data</strong> or run the collector.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         TAB 3 — FEATURE ENGINEERING
+         ============================================================ -->
+    <section class="tab-content" id="tab-features">
+      <div class="flex justify-between items-center mb-20">
+        <div>
+          <h2 class="section-title"><i data-lucide="settings-2"></i> Feature Engineering</h2>
+          <p class="section-desc">
+            <code>features.py</code> transforms raw memory logs into an ML-ready matrix
+            with lag features, rolling windows, rates of change, and process context.
+          </p>
+        </div>
+        <button class="btn btn-primary" id="btn-features" onclick="runPipeline('features')">
+          <i data-lucide="binary"></i> Build Features
+        </button>
+      </div>
+
+      <!-- Feature Groups -->
+      <div class="grid-3 mb-20">
+        <div class="card">
+          <div class="card-header"><span class="card-title"><i data-lucide="fast-forward"></i> Lag Features</span></div>
+          <div class="feature-list">
+            <span class="feature-chip">mem_lag1</span>
+            <span class="feature-chip">mem_lag5</span>
+            <span class="feature-chip">mem_lag10</span>
+          </div>
+          <p class="metric-sub mt-20">Previous timestep memory values</p>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title"><i data-lucide="trending-down"></i> Rolling Window</span></div>
+          <div class="feature-list">
+            <span class="feature-chip">mem_roll_mean</span>
+            <span class="feature-chip">mem_roll_std</span>
+            <span class="feature-chip">mem_roll_min</span>
+            <span class="feature-chip">mem_roll_max</span>
+          </div>
+          <p class="metric-sub mt-20">Moving statistics (w=30 samples)</p>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title"><i data-lucide="rocket"></i> Rate of Change</span></div>
+          <div class="feature-list">
+            <span class="feature-chip">mem_delta</span>
+            <span class="feature-chip">time_delta</span>
+            <span class="feature-chip">rate_mb_per_sec</span>
+          </div>
+          <p class="metric-sub mt-20">Memory velocity between samples</p>
+        </div>
+      </div>
+
+      <div class="grid-2 mb-20">
+        <div class="card">
+          <div class="card-header"><span class="card-title"><i data-lucide="monitor"></i> Process Context</span></div>
+          <div class="feature-list">
+            <span class="feature-chip">rss1</span>
+            <span class="feature-chip">rss2</span>
+            <span class="feature-chip">rss3</span>
+            <span class="feature-chip">rss4</span>
+            <span class="feature-chip">rss5</span>
+          </div>
+          <p class="metric-sub mt-20">Top-5 process RSS (resident set size)</p>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title"><i data-lucide="crosshair"></i> Target Variable</span></div>
+          <div class="feature-list">
+            <span class="feature-chip" style="border-color:var(--cyan);color:var(--cyan);">y = used_mb.shift(-10)</span>
+          </div>
+          <p class="metric-sub mt-20">Predict <strong>used_mb</strong> 10 steps into the future</p>
+        </div>
+      </div>
+
+      <!-- Feature Matrix Info -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title"><i data-lucide="table"></i> Feature Matrix</span>
+          <span class="badge badge-violet" id="features-badge">features.csv</span>
+        </div>
+        <div class="grid-3" id="feature-stats-grid">
+          <div class="metric-card">
+            <div class="metric-label">Rows</div>
+            <div class="metric-value violet" id="feat-rows">—</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Columns</div>
+            <div class="metric-value violet" id="feat-cols">—</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">NaN Dropped</div>
+            <div class="metric-value" style="color:var(--text-secondary)" id="feat-dropped">—</div>
+          </div>
+        </div>
+        <div id="features-column-list" class="mt-20"></div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         TAB 4 — MODEL TRAINING
+         ============================================================ -->
+    <section class="tab-content" id="tab-training">
+      <div class="flex justify-between items-center mb-20">
+        <div>
+          <h2 class="section-title"><i data-lucide="bot"></i> Model Training</h2>
+          <p class="section-desc">
+            Two models are trained on the feature matrix — a <strong>Random Forest</strong>
+            (interpretable baseline) and an <strong>LSTM</strong> (deep learning, temporal patterns).
+          </p>
+        </div>
+        <button class="btn btn-primary" id="btn-train" onclick="runPipeline('train')">
+          <i data-lucide="brain-circuit"></i> Train Models
+        </button>
+      </div>
+
+      <!-- Model Cards -->
+      <div class="grid-2 mb-20">
+        <!-- Random Forest -->
+        <div class="card" id="rf-card">
+          <div class="card-header">
+            <span class="card-title"><i data-lucide="tree-deciduous" style="color:var(--emerald)"></i> Random Forest</span>
+            <span class="badge badge-emerald">Baseline</span>
+          </div>
+          <div class="grid-3 mb-20">
+            <div class="metric-card">
+              <div class="metric-label">MAE</div>
+              <div class="metric-value emerald" id="rf-mae">—</div>
+              <div class="metric-unit">MB</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">RMSE</div>
+              <div class="metric-value emerald" id="rf-rmse">—</div>
+              <div class="metric-unit">MB</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">MAPE</div>
+              <div class="metric-value emerald" id="rf-mape">—</div>
+              <div class="metric-unit">%</div>
+            </div>
+          </div>
+          <div class="data-table-wrap mb-12">
+            <table class="data-table">
+              <tbody>
+                <tr><td>Algorithm</td><td><code>RandomForestRegressor</code></td></tr>
+                <tr><td>Estimators</td><td>100</td></tr>
+                <tr><td>Train / Test</td><td>80% / 20%</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <!-- LSTM -->
+        <div class="card" id="lstm-card">
+          <div class="card-header">
+            <span class="card-title"><i data-lucide="layers" style="color:var(--violet)"></i> LSTM Neural Network</span>
+            <span class="badge badge-violet">Deep Learning</span>
+          </div>
+          <div class="grid-3 mb-20">
+            <div class="metric-card">
+              <div class="metric-label">MAE</div>
+              <div class="metric-value violet" id="lstm-mae">—</div>
+              <div class="metric-unit">MB</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">RMSE</div>
+              <div class="metric-value violet" id="lstm-rmse">—</div>
+              <div class="metric-unit">MB</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">MAPE</div>
+              <div class="metric-value violet" id="lstm-mape">—</div>
+              <div class="metric-unit">%</div>
+            </div>
+          </div>
+          <div class="data-table-wrap mb-12">
+            <table class="data-table">
+              <tbody>
+                <tr><td>Architecture</td><td>2-layer LSTM, hidden=64</td></tr>
+                <tr><td>Window</td><td>20 timesteps</td></tr>
+                <tr><td>Epochs / Batch</td><td>30 / 32</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="grid-2 mb-20">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title"><i data-lucide="line-chart"></i> RF Results</span>
+          </div>
+          <div id="rf-results-chart-wrap">
+            <img id="rf-results-img" src="" alt="RF Results" style="width:100%;border-radius:var(--radius-sm);display:none;">
+            <div class="empty-state" id="rf-results-empty"><div class="empty-icon"><i data-lucide="line-chart"></i></div><p>Train for results</p></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title"><i data-lucide="line-chart"></i> LSTM Results</span>
+          </div>
+          <div id="lstm-results-chart-wrap">
+            <img id="lstm-results-img" src="" alt="LSTM Results" style="width:100%;border-radius:var(--radius-sm);display:none;">
+            <div class="empty-state" id="lstm-results-empty"><div class="empty-icon"><i data-lucide="line-chart"></i></div><p>Train for results</p></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title"><i data-lucide="bar-chart-3"></i> Feature Importances</span>
+          </div>
+          <div id="rf-importances-wrap">
+            <img id="rf-importances-img" src="" alt="RF Importances" style="width:100%;border-radius:var(--radius-sm);display:none;">
+            <div class="empty-state" id="rf-importances-empty"><div class="empty-icon"><i data-lucide="bar-chart-3"></i></div><p>Train for importances</p></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title"><i data-lucide="trending-down"></i> Training Loss</span>
+          </div>
+          <div id="lstm-loss-wrap">
+            <img id="lstm-loss-img" src="" alt="LSTM Loss" style="width:100%;border-radius:var(--radius-sm);display:none;">
+            <div class="empty-state" id="lstm-loss-empty"><div class="empty-icon"><i data-lucide="trending-down"></i></div><p>Train for loss curve</p></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         TAB 5 — DECISION ENGINE
+         ============================================================ -->
+    <section class="tab-content" id="tab-decisions">
+      <div class="flex justify-between items-center mb-20">
+        <div>
+          <h2 class="section-title"><i data-lucide="target"></i> Decision Engine & Simulation</h2>
+          <p class="section-desc">
+            The decision engine maps forecasted memory to proactive OS actions.
+            Thresholds are configurable and evaluated row-by-row on the feature matrix.
+          </p>
+        </div>
+        <button class="btn btn-primary" id="btn-simulate" onclick="runPipeline('simulate')">
+          <i data-lucide="play-circle"></i> Run Simulation
+        </button>
+      </div>
+
+      <!-- Threshold Visualization -->
+      <div class="card mb-20">
+        <div class="card-header">
+          <span class="card-title"><i data-lucide="gauge"></i> Decision Thresholds</span>
+        </div>
+        <div class="threshold-bar">
+          <div class="threshold-segment normal" style="width: 85%;"></div>
+          <div class="threshold-segment warning" style="width: 10%;"></div>
+          <div class="threshold-segment danger" style="width: 5%;"></div>
+        </div>
+        <div class="threshold-label">
+          <span style="color:var(--emerald)">0% — Normal (none)</span>
+          <span style="color:var(--amber)" id="swap-label">85% — Swap Early</span>
+          <span style="color:var(--rose)" id="oom-label">95% — Throttle OOM</span>
+          <span>100%</span>
+        </div>
+        <p class="metric-sub mt-20">
+          <i data-lucide="zap" style="width:12px;height:12px;color:var(--cyan)"></i>
+          Additional rule: if <code>forecast - current &gt; 200 MB</code> → <strong>pre-allocate</strong>
+        </p>
+        <div class="data-table-wrap mt-20">
+          <table class="data-table">
+            <thead><tr><th>Condition</th><th>Action</th><th>Meaning</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>Forecast &gt; 95% RAM</td>
+                <td><span class="badge badge-rose">throttle_oom</span></td>
+                <td>Imminent OOM — throttle/kill low-priority</td>
+              </tr>
+              <tr>
+                <td>Forecast &gt; 85% RAM</td>
+                <td><span class="badge badge-amber">swap_early</span></td>
+                <td>High pressure — early swap-out</td>
+              </tr>
+              <tr>
+                <td>Forecast − Current &gt; 200 MB</td>
+                <td><span class="badge badge-cyan">prealloc</span></td>
+                <td>Spike detected — pre-allocate</td>
+              </tr>
+              <tr>
+                <td>Otherwise</td>
+                <td><span class="badge" style="background:rgba(100,116,139,0.15);color:var(--text-muted)">none</span></td>
+                <td>Normal range, no action needed</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Decision Results -->
+      <div class="grid-2 mb-20">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title"><i data-lucide="pie-chart"></i> Decision Distribution</span>
+          </div>
+          <div class="chart-container" style="min-height:280px;">
+            <canvas id="decisions-donut-chart"></canvas>
+          </div>
+          <div id="decision-summary-table" class="mt-20"></div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title"><i data-lucide="bar-chart-3"></i> Decision Timeline</span>
+          </div>
+          <div id="decisions-timeline-wrap">
+            <img id="decisions-timeline-img" src="" alt="Decisions Timeline" style="width:100%;border-radius:var(--radius-sm);display:none;">
+            <div class="empty-state" id="decisions-timeline-empty">
+              <div class="empty-icon"><i data-lucide="bar-chart-3"></i></div><p>Run simulation to see the timeline</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         TAB 6 — EVALUATION
+         ============================================================ -->
+    <section class="tab-content" id="tab-evaluation">
+      <div class="flex justify-between items-center mb-20">
+        <div>
+          <h2 class="section-title"><i data-lucide="line-chart"></i> Model Comparison & Evaluation</h2>
+          <p class="section-desc">
+            Head-to-head comparison of Random Forest vs LSTM across key regression
+            metrics. Both models are trained and evaluated on the same split.
+          </p>
+        </div>
+        <button class="btn btn-primary" id="btn-evaluate" onclick="runPipeline('evaluate')">
+          <i data-lucide="bar-chart-3"></i> Evaluate
+        </button>
+      </div>
+
+      <!-- Winner Card -->
+      <div class="card winner-card mb-20" id="winner-card" style="display:none;">
+        <div class="trophy"><i data-lucide="award" style="width:48px;height:48px;color:var(--amber)"></i></div>
+        <div class="winner-name" id="winner-name">—</div>
+        <div class="winner-detail" id="winner-detail">—</div>
+      </div>
+
+      <!-- Side-by-side Metrics -->
+      <div class="grid-2 mb-20">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title"><i data-lucide="tree-deciduous" style="color:var(--emerald)"></i> Random Forest</span>
+          </div>
+          <div class="grid-3">
+            <div class="metric-card">
+              <div class="metric-label">MAE</div>
+              <div class="metric-value emerald" id="eval-rf-mae">—</div>
+              <div class="metric-unit">MB</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">RMSE</div>
+              <div class="metric-value emerald" id="eval-rf-rmse">—</div>
+              <div class="metric-unit">MB</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">MAPE</div>
+              <div class="metric-value emerald" id="eval-rf-mape">—</div>
+              <div class="metric-unit">%</div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title"><i data-lucide="layers" style="color:var(--violet)"></i> LSTM</span>
+          </div>
+          <div class="grid-3">
+            <div class="metric-card">
+              <div class="metric-label">MAE</div>
+              <div class="metric-value violet" id="eval-lstm-mae">—</div>
+              <div class="metric-unit">MB</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">RMSE</div>
+              <div class="metric-value violet" id="eval-lstm-rmse">—</div>
+              <div class="metric-unit">MB</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">MAPE</div>
+              <div class="metric-value violet" id="eval-lstm-mape">—</div>
+              <div class="metric-unit">%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Comparison Chart -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title"><i data-lucide="line-chart"></i> Model Comparison — Predictions Overlay</span>
+        </div>
+        <div id="comparison-chart-wrap">
+          <img id="comparison-chart-img" src="" alt="Model Comparison" style="width:100%;border-radius:var(--radius-sm);display:none;">
+          <div class="empty-state" id="comparison-chart-empty">
+            <div class="empty-icon"><i data-lucide="bar-chart-3"></i></div>
+            <p>Run evaluation for comparison chart</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="footer">
+      <p><strong>AI-Based Memory Forecaster</strong> — Advanced Operating Systems Course Project</p>
+      <p style="margin-top: 4px; opacity: 0.6;">Built with Flask, PyTorch, Scikit-Learn & Lucide</p>
+    </footer>
+
+  </div><!-- /app-container -->
+
+  <script src="/static/js/dashboard.js"></script>
+</body>
+</html>
