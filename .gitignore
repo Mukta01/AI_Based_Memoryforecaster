@@ -1,0 +1,39 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Virtual Environments
+.venv/
+venv/
+env/
+bin/
+lib/
+share/
+Include/
+pyvenv.cfg
+
+# Project-specific data and outputs
+# It's better to exclude generated CSVs and plots from version control
+memory-forecaster/data/*.csv
+memory-forecaster/data/*.png
+memory-forecaster/model/*.pkl
+memory-forecaster/model/*.pt
+
+# IDE / Editor specific
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Logs
+*.log
