@@ -1,0 +1,45 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Data Science / Local Data
+# We exclude the data and model folders so the cloud image is clean. 
+# The pipeline is designed to generate these in the environment.
+memory-forecaster/data/*.csv
+memory-forecaster/data/*.png
+memory-forecaster/model/*.pkl
+memory-forecaster/model/*.pt
+
+# OS / IDE
+.DS_Store
+.vscode/
+.idea/
+.gemini/
+.env
+
+# Local Startup scripts (Not needed in Docker)
+memory-forecaster/*.bat
+memory-forecaster/*.sh
