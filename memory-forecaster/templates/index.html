@@ -70,6 +70,9 @@
       <button class="tab-btn" data-tab="decisions">
         <i data-lucide="target"></i> Decisions
       </button>
+      <button class="tab-btn" data-tab="simulation">
+        <i data-lucide="play-circle"></i> Simulation
+      </button>
       <button class="tab-btn" data-tab="evaluation">
         <i data-lucide="line-chart"></i> Evaluation
       </button>
@@ -110,7 +113,7 @@
           <span class="arch-arrow">→</span>
           <div class="arch-node" style="border-color:var(--amber);">
             <i data-lucide="play-circle" style="color:var(--amber)"></i>
-            Decisions<small>prealloc · swap · OOM</small>
+            Simulation<small>prealloc · swap · OOM</small>
           </div>
           <span class="arch-arrow">→</span>
           <div class="arch-node" style="border-color:var(--rose);">
@@ -255,7 +258,9 @@
       <div class="card">
         <div class="card-header">
           <span class="card-title"><i data-lucide="file-text"></i> Raw Data Preview</span>
-          <span class="badge badge-cyan" id="collect-badge">memory_log.csv</span>
+          <a href="/api/download/memory_log.csv" class="btn btn-sm" id="download-log">
+            <i data-lucide="download"></i> memory_log.csv
+          </a>
         </div>
         <div class="data-table-wrap" id="raw-data-table">
           <div class="empty-state">
@@ -339,23 +344,58 @@
       <!-- Feature Matrix Info -->
       <div class="card">
         <div class="card-header">
-          <span class="card-title"><i data-lucide="table"></i> Feature Matrix</span>
-          <span class="badge badge-violet" id="features-badge">features.csv</span>
+          <span class="card-title"><i data-lucide="table"></i> Feature Matrix Specification</span>
+          <a href="/api/download/features.csv" class="btn btn-sm" id="download-features">
+            <i data-lucide="download"></i> features.csv
+          </a>
         </div>
-        <div class="grid-3" id="feature-stats-grid">
+        
+        <div class="grid-3 mb-20" id="feature-stats-grid">
           <div class="metric-card">
-            <div class="metric-label">Rows</div>
+            <div class="metric-label">Training Samples</div>
             <div class="metric-value violet" id="feat-rows">—</div>
+            <div class="metric-sub">rows after cleanup</div>
           </div>
           <div class="metric-card">
-            <div class="metric-label">Columns</div>
+            <div class="metric-label">Input Dimensions</div>
             <div class="metric-value violet" id="feat-cols">—</div>
+            <div class="metric-sub">total feature columns</div>
           </div>
           <div class="metric-card">
-            <div class="metric-label">NaN Dropped</div>
+            <div class="metric-label">Dropped (NaN)</div>
             <div class="metric-value" style="color:var(--text-secondary)" id="feat-dropped">—</div>
+            <div class="metric-sub">due to lag/rolling window</div>
           </div>
         </div>
+
+        <h3 class="mb-12" style="font-size:0.9rem;text-transform:uppercase;color:var(--text-muted);letter-spacing:0.05em;">How the matrix is constructed</h3>
+        <div class="grid-2 gap-20">
+          <div class="metric-card" style="padding:16px;">
+            <h4 class="cyan mb-12"><i data-lucide="history"></i> Temporal Lags</h4>
+            <p style="font-size:0.8rem;color:var(--text-secondary)">
+              Shifts memory usage backwards (1, 5, 10 steps) so the model can see "recent history" at every point in time.
+            </p>
+          </div>
+          <div class="metric-card" style="padding:16px;">
+            <h4 class="violet mb-12"><i data-lucide="activity"></i> Rolling Stats</h4>
+            <p style="font-size:0.8rem;color:var(--text-secondary)">
+              Computes Mean, Std Dev, Min, and Max over a 30-sample window to smooth out short-term noise.
+            </p>
+          </div>
+          <div class="metric-card" style="padding:16px;">
+            <h4 class="emerald mb-12"><i data-lucide="trending-up"></i> Usage Velocity</h4>
+            <p style="font-size:0.8rem;color:var(--text-secondary)">
+              Calculates the delta in MB divided by the delta in time (MB/sec) to capture the speed of usage growth.
+            </p>
+          </div>
+          <div class="metric-card" style="padding:16px;">
+            <h4 class="amber mb-12"><i data-lucide="cpu"></i> Process Mapping</h4>
+            <p style="font-size:0.8rem;color:var(--text-secondary)">
+              Extracts the numeric RSS values of the top-5 processes to capture the specific resource footprint of active apps.
+            </p>
+          </div>
+        </div>
+
         <div id="features-column-list" class="mt-20"></div>
       </div>
     </section>
@@ -492,20 +532,17 @@
     </section>
 
     <!-- ============================================================
-         TAB 5 — DECISION ENGINE
+         TAB 5 — DECISIONS (Policy & Rules)
          ============================================================ -->
     <section class="tab-content" id="tab-decisions">
       <div class="flex justify-between items-center mb-20">
         <div>
-          <h2 class="section-title"><i data-lucide="target"></i> Decision Engine & Simulation</h2>
+          <h2 class="section-title"><i data-lucide="shield-check"></i> OS Decision Policy</h2>
           <p class="section-desc">
-            The decision engine maps forecasted memory to proactive OS actions.
-            Thresholds are configurable and evaluated row-by-row on the feature matrix.
+            Define the proactive rules that map forecasts to system actions. 
+            Thresholds are used to determine which memory management strategy to trigger.
           </p>
         </div>
-        <button class="btn btn-primary" id="btn-simulate" onclick="runPipeline('simulate')">
-          <i data-lucide="play-circle"></i> Run Simulation
-        </button>
       </div>
 
       <!-- Threshold Visualization -->
@@ -528,6 +565,7 @@
           <i data-lucide="zap" style="width:12px;height:12px;color:var(--cyan)"></i>
           Additional rule: if <code>forecast - current &gt; 200 MB</code> → <strong>pre-allocate</strong>
         </p>
+
         <div class="data-table-wrap mt-20">
           <table class="data-table">
             <thead><tr><th>Condition</th><th>Action</th><th>Meaning</th></tr></thead>
@@ -556,6 +594,24 @@
           </table>
         </div>
       </div>
+    </section>
+
+    <!-- ============================================================
+         TAB 6 — SIMULATION (Execution & Audit)
+         ============================================================ -->
+    <section class="tab-content" id="tab-simulation">
+      <div class="flex justify-between items-center mb-20">
+        <div>
+          <h2 class="section-title"><i data-lucide="play-circle"></i> Simulation & Audit</h2>
+          <p class="section-desc">
+            Replay recorded telemetry through the decision engine to verify 
+            proactive improvements over standard reactive management.
+          </p>
+        </div>
+        <button class="btn btn-primary" id="btn-simulate" onclick="runPipeline('simulate')">
+          <i data-lucide="play-circle"></i> Run Simulation
+        </button>
+      </div>
 
       <!-- Decision Results -->
       <div class="grid-2 mb-20">
@@ -570,14 +626,26 @@
         </div>
         <div class="card">
           <div class="card-header">
-            <span class="card-title"><i data-lucide="bar-chart-3"></i> Decision Timeline</span>
+            <span class="card-title"><i data-lucide="bar-chart-3"></i> Simulation Timeline</span>
           </div>
           <div id="decisions-timeline-wrap">
             <img id="decisions-timeline-img" src="" alt="Decisions Timeline" style="width:100%;border-radius:var(--radius-sm);display:none;">
             <div class="empty-state" id="decisions-timeline-empty">
-              <div class="empty-icon"><i data-lucide="bar-chart-3"></i></div><p>Run simulation to see the timeline</p>
+              <div class="empty-icon"><i data-lucide="bar-chart-3"></i></div><p>Run simulation to see results</p>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- Audit Log -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title"><i data-lucide="clipboard-list"></i> Decision Audit Log</span>
+          <span class="badge badge-cyan">Reason Added</span>
+        </div>
+        <p class="section-desc mb-20" style="margin-bottom:12px;">Chronological trace of forecasts and the resulting OS actions.</p>
+        <div id="decision-audit-log" class="data-table-wrap">
+          <div class="empty-state"><p>No audit log available. Run simulation first.</p></div>
         </div>
       </div>
     </section>

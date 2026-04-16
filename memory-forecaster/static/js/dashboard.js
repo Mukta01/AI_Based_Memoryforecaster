@@ -163,8 +163,8 @@ async function loadRawData() {
   if (!data || !data.rows || data.rows.length === 0) return;
 
   const headers = data.columns || Object.keys(data.rows[0]);
-  // Show only key columns for readability
-  const showCols = ['timestamp', 'used_mb', 'avail_mb', 'mem_pct', 'name1', 'rss1', 'name2', 'rss2'];
+  // Show only key columns for readability including requested PID and CPU
+  const showCols = ['timestamp', 'used_mb', 'avail_mb', 'mem_pct', 'pid1', 'name1', 'cpu1', 'rss1', 'pid2', 'name2', 'cpu2', 'rss2'];
   const filteredHeaders = showCols.filter(c => headers.includes(c));
 
   let html = '<table class="data-table"><thead><tr>';
@@ -269,11 +269,41 @@ async function loadDecisionData() {
   // Show timeline plot
   showPlot('decisions-timeline-img', 'decisions-timeline-empty', '/api/plots/decisions_timeline.png');
 
-  // Build donut chart
+  // Build donut chart & audit log
   if (data.summary) {
     renderDecisionDonut(data.summary);
     renderDecisionTable(data.summary, data.total || 0);
   }
+  if (data.audit) {
+    renderAuditLog(data.audit);
+  }
+}
+
+function renderAuditLog(audit) {
+  const container = document.getElementById('decision-audit-log');
+  if (!container) return;
+
+  let html = '<div class="data-table-wrap"><table class="data-table"><thead><tr><th>Time</th><th>Forecast</th><th>Current</th><th>Action</th><th>Reason</th></tr></thead><tbody>';
+  
+  audit.forEach(row => {
+    const badgeClass = {
+      'none': '',
+      'prealloc': 'badge-cyan',
+      'swap_early': 'badge-amber',
+      'throttle_oom': 'badge-rose'
+    }[row.action] || '';
+    
+    html += '<tr>';
+    html += '<td>' + row.timestamp + '</td>';
+    html += '<td>' + row.forecast_mb.toFixed(1) + '</td>';
+    html += '<td>' + row.current_mb.toFixed(1) + '</td>';
+    html += '<td><span class="badge ' + badgeClass + '">' + row.action + '</span></td>';
+    html += '<td><small style="color:var(--text-muted)">' + row.reason + '</small></td>';
+    html += '</tr>';
+  });
+  
+  html += '</tbody></table></div>';
+  container.innerHTML = html;
 }
 
 function renderDecisionDonut(summary) {

@@ -194,20 +194,22 @@ def api_data_features():
 
 @app.route("/api/data/decisions")
 def api_data_decisions():
-    """Return decision summary."""
+    """Return decision summary and audit log."""
     if not DECISIONS_CSV.exists():
-        return jsonify({"summary": {}, "total": 0})
+        return jsonify({"summary": {}, "total": 0, "audit": []})
 
     try:
         df = pd.read_csv(DECISIONS_CSV)
         summary = df["action"].value_counts().to_dict()
-        return jsonify({"summary": summary, "total": len(df)})
+        # Return last 50 decisions for the audit log
+        audit = json.loads(df.tail(50).to_json(orient="records"))
+        return jsonify({"summary": summary, "total": len(df), "audit": audit})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
 # ===================================================================
-# Routes — Serve Plots
+# Routes — Serve Plots & Downloads
 # ===================================================================
 
 @app.route("/api/plots/<filename>")
@@ -216,6 +218,16 @@ def api_plots(filename):
     if not (DATA_DIR / filename).exists():
         return jsonify({"error": "File not found"}), 404
     return send_from_directory(str(DATA_DIR), filename)
+
+
+@app.route("/api/download/<filename>")
+def api_download(filename):
+    """Serve data CSVs as downloads."""
+    if filename not in ["memory_log.csv", "features.csv", "decisions.csv"]:
+        return jsonify({"error": "Invalid filename"}), 400
+    if not (DATA_DIR / filename).exists():
+        return jsonify({"error": "File not found"}), 404
+    return send_from_directory(str(DATA_DIR), filename, as_attachment=True)
 
 
 # ===================================================================
